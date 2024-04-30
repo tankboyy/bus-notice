@@ -14,6 +14,9 @@ export default function Map() {
     lng: number
   }>()
 
+  const [busData, setBusData] = useState<any>(null)
+
+  const mapRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
@@ -25,6 +28,7 @@ export default function Map() {
       })
     }
   }, [])
+  let map:any = undefined;
   useEffect(() => {
 
     if(!position) return
@@ -41,7 +45,7 @@ export default function Map() {
           level: 3,
         }
   
-        var map = new window.kakao.maps.Map(container, options)
+        map = new window.kakao.maps.Map(container, options)
       })
     }
   
@@ -50,7 +54,28 @@ export default function Map() {
 
   return(
     <>
-    <div className="w-[400px] h-[400px]" id="map"></div>
+    <button onClick={async () => {
+      if(!map) return
+      const location = map.getCenter()
+      console.log( location.Ma, location.La)
+
+      fetch("/api/bus", {
+        method: "POST",
+        body: JSON.stringify({
+          lat: location.Ma,
+          lng: location.La
+        })
+      }).then(async res => console.log( await res.json()))
+    }}>asd</button>
+    <div className="w-[400px] h-[400px]" id="map" ref={mapRef}></div>
+    <div>
+      <h1>List</h1>
+      {busData && busData.map((bus: any) => {
+        return <>
+        hihi
+        </>
+      })}
+    </div>
     </>
   )
 }
