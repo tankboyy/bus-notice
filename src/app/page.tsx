@@ -15,7 +15,6 @@ export default async function Home() {
   const data = await test();
   return (
     <>
-      <h1>Next.js</h1>
       <Map />
     </>
   );
