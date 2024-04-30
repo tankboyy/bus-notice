@@ -26,6 +26,16 @@ export default function Map() {
           lng: position.coords.longitude
         })
       })
+      fetch("/api/bus", {
+        method: "POST",
+        body: JSON.stringify({
+          lat: position?.lat,
+          lng: position?.lng
+        })
+      }).then(async res => {
+        const {busStationAroundList} = await res.json()
+        setBusData(busStationAroundList)
+      })
     }
   }, [])
   let map:any = undefined;
@@ -59,21 +69,19 @@ export default function Map() {
       const location = map.getCenter()
       console.log( location.Ma, location.La)
 
-      fetch("/api/bus", {
-        method: "POST",
-        body: JSON.stringify({
-          lat: location.Ma,
-          lng: location.La
-        })
-      }).then(async res => console.log( await res.json()))
+    
     }}>asd</button>
     <div className="w-[400px] h-[400px]" id="map" ref={mapRef}></div>
     <div>
       <h1>List</h1>
       {busData && busData.map((bus: any) => {
-        return <>
-        hihi
-        </>
+        return (
+        <div key={bus.stationId._text}>
+        <h1>
+        {bus.stationName._text}
+          </h1>
+        </div>
+        )
       })}
     </div>
     </>
