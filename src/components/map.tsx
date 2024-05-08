@@ -1,12 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from "react"
+import { createContext, useEffect, useRef, useState } from "react"
+import { xml2json } from "xml-js";
 
 declare global {
   interface Window {
     kakao: any;
   }
 }
+
+const MapContext = createContext(null)
 
 export default function Map() {
   const [position, setPosition]= useState<{
@@ -16,31 +19,50 @@ export default function Map() {
 
   const [busData, setBusData] = useState<any>(null)
 
-  const mapRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
+      const data = navigator.geolocation.getCurrentPosition((position) => {
         console.log(position.coords.latitude, position.coords.longitude)
         setPosition({
           lat: position.coords.latitude,
           lng: position.coords.longitude
         })
+        return "hihi"
       })
-      fetch("/api/bus", {
-        method: "POST",
-        body: JSON.stringify({
-          lat: position?.lat,
-          lng: position?.lng
-        })
-      }).then(async res => {
-        const {busStationAroundList} = await res.json()
-        setBusData(busStationAroundList)
-      })
+      console.log(data)
     }
   }, [])
-  let map:any = undefined;
-  useEffect(() => {
 
+
+  useEffect(() => {
+    console.log('fetching')
+    async function fetchData() {
+      console.log('asd')
+      if(!map) return
+      console.log('fetching data')
+      const location = map.getCenter()
+      console.log( location.Ma, location.La)
+    
+      const data = await fetch("/api/bus", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lat: location.Ma,
+          lng: location.La
+        }),
+      })
+      console.log(await data.json())
+    }
+
+    fetchData()
+  }, [position])
+
+  const [map, setMap] = useState<any>(null)
+
+
+  useEffect(() => {
     if(!position) return
     const kakaoMapScript = document.createElement('script')
     kakaoMapScript.async = false
@@ -55,25 +77,54 @@ export default function Map() {
           level: 3,
         }
   
-        map = new window.kakao.maps.Map(container, options)
+        setMap(new window.kakao.maps.Map(container, options))
       })
     }
   
     kakaoMapScript.addEventListener('load', onLoadKakaoAPI)
   }, [position])
 
+  useEffect(() => {
+    console.log('changed', map)
+  }, [map])
+
   return(
     <>
-    <button onClick={async () => {
-      if(!map) return
-      const location = map.getCenter()
-      console.log( location.Ma, location.La)
+    <button onClick={() => {
+      console.log(map.getCenter())
+      const mapTypeControl = new window.kakao.maps.MapTypeControl()
 
+        map.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT)
+    }}>
+      test
+    </button>
+    <div className="w-[400px] h-[400px]" id="map"></div>
     
-    }}>asd</button>
-    <div className="w-[400px] h-[400px]" id="map" ref={mapRef}></div>
-    <div>
+    <div className="flex">
+      <div className="flex flex-col w-1/2">
+      <div className="flex flex-row justify-between">
+
       <h1>List</h1>
+      <button onClick={async () => {
+        console.log("불러오기")
+        const location = map.getCenter()
+        console.log(location.Ma, location.La)
+        const data = await fetch('api/bus', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            lat: location.Ma,
+            lng: location.La
+          })
+        })
+        .then(async (res) => await res.json())
+        setBusData(data.busStationAroundList)
+      }}>
+        불러오기
+      </button>
+      </div>
       {busData && busData.map((bus: any) => {
         return (
         <div key={bus.stationId._text}>
@@ -83,6 +134,7 @@ export default function Map() {
         </div>
         )
       })}
+      </div>
     </div>
     </>
   )

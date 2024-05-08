@@ -5,7 +5,6 @@ export default function Bus(data: any) {
   return (
     <>
       <h1>Bus</h1>
-
     </>
   );
 }
