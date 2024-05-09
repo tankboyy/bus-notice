@@ -9,7 +9,15 @@ declare global {
   }
 }
 
-const MapContext = createContext(null)
+
+
+const getBusStopData = async (stationId: string) => {
+    return await fetch(`http://apis.data.go.kr/6410000/busstationservice/getBusStationViaRouteList?serviceKey=2ne%2FPTKvr%2BUL%2FsvEmupc%2B8Hs2tFqlSMFO5TxaKhD3Mq5%2FfwEqecNwnUZ8mDR1U0jvCSy96XEAyiPTYR111Sh1Q%3D%3D&stationId=${stationId}`)
+    .then(async (res) => {
+      return JSON.parse(xml2json(await res.text(), {compact: true, spaces: 4})).response.msgBody.busRouteList
+    })
+}
+
 
 export default function Map() {
   const [position, setPosition]= useState<{
@@ -18,6 +26,7 @@ export default function Map() {
   }>()
 
   const [busData, setBusData] = useState<any>(null)
+  const [busStopData, setBusStopData] = useState<any>(null)
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -106,9 +115,7 @@ export default function Map() {
 
       <h1>List</h1>
       <button onClick={async () => {
-        console.log("불러오기")
         const location = map.getCenter()
-        console.log(location.Ma, location.La)
         const data = await fetch('api/bus', {
           method: 'POST',
           headers: {
@@ -120,20 +127,85 @@ export default function Map() {
           })
         })
         .then(async (res) => await res.json())
+        console.log(data.busStationAroundList)
+        data.busStationAroundList.map((bus: any) => {
+          const marker = new window.kakao.maps.Marker({
+            position: new window.kakao.maps.LatLng(bus.y._text, bus.x._text),
+            map: map,
+            text: bus.stationName._text
+          })
+          marker.setMap(map)
+        })
         setBusData(data.busStationAroundList)
+
       }}>
         불러오기
       </button>
+      
       </div>
       {busData && busData.map((bus: any) => {
         return (
         <div key={bus.stationId._text}>
-        <h1>
+        <h1 className=" cursor-pointer"
+        onClick={async () => {
+          console.log(bus)
+          // 도착 예정 버스 정보
+          const data = await fetch(`http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalList?serviceKey=2ne%2FPTKvr%2BUL%2FsvEmupc%2B8Hs2tFqlSMFO5TxaKhD3Mq5%2FfwEqecNwnUZ8mDR1U0jvCSy96XEAyiPTYR111Sh1Q%3D%3D&stationId=${bus.stationId._text}`)
+            .then(async (res) => {
+              return JSON.parse(xml2json(await res.text(), {compact: true, spaces: 4}))
+            })
+            console.log(data)
+
+            // 이거다 ^^!@##$!@#
+          // const data3 = await fetch(`http://apis.data.go.kr/6410000/busstationservice/getBusStationViaRouteList?serviceKey=2ne%2FPTKvr%2BUL%2FsvEmupc%2B8Hs2tFqlSMFO5TxaKhD3Mq5%2FfwEqecNwnUZ8mDR1U0jvCSy96XEAyiPTYR111Sh1Q%3D%3D&stationId=${bus.stationId._text}`)
+          //   .then(async (res) => {
+          //     return JSON.parse(xml2json(await res.text(), {compact: true, spaces: 4}))
+          //   })
+          //   console.log(data3)
+
+          // const data2 = await fetch(`http://apis.data.go.kr/6410000/buslocationservice/getBusLocationList?serviceKey=2ne%2FPTKvr%2BUL%2FsvEmupc%2B8Hs2tFqlSMFO5TxaKhD3Mq5%2FfwEqecNwnUZ8mDR1U0jvCSy96XEAyiPTYR111Sh1Q%3D%3D&routeId=223000100`)
+          //   .then(async (res) => {
+          //     return JSON.parse(xml2json(await res.text(), {compact: true, spaces: 4}))
+          //   })
+          //   console.log(data2)
+
+          // 경유경류소목록조회 버스번호(routeId)로 경유경류소 목록 조회
+          // const data = await fetch(`http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalList?serviceKey=2ne%2FPTKvr%2BUL%2FsvEmupc%2B8Hs2tFqlSMFO5TxaKhD3Mq5%2FfwEqecNwnUZ8mDR1U0jvCSy96XEAyiPTYR111Sh1Q%3D%3D&stationId=${bus.stationId._text}`)
+          //   .then(async (res) => {
+          //     return JSON.parse(xml2json(await res.text(), {compact: true, spaces: 4}))
+          //   })
+          //   console.log(data)
+
+          const busStopData = await getBusStopData(bus.stationId._text)
+          console.log(busStopData)
+          setBusStopData({data: busStopData, stationName: bus.stationName._text})
+
+        }}
+        >
         {bus.stationName._text}
-          </h1>
+        </h1>
         </div>
         )
       })}
+      </div>
+      <div>
+        {
+          busStopData && 
+          <div>
+            <h1>
+              {busStopData.stationName}
+            </h1>
+          {busStopData && busStopData.data.map((bus: any) => {
+            return (
+            <div key={bus.routeId._text}>
+            <h1>
+            {bus.routeName._text}
+            </h1>
+            </div>
+            )
+          })}
+          </div>
+        }
       </div>
     </div>
     </>
