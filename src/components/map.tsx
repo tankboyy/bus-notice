@@ -178,7 +178,7 @@ export default function Map() {
 
           const busStopData = await getBusStopData(bus.stationId._text)
           console.log(busStopData)
-          setBusStopData({data: busStopData, stationName: bus.stationName._text})
+          setBusStopData({data: busStopData, stationName: bus.stationName._text, stationId: bus.stationId._text})
 
         }}
         >
@@ -198,7 +198,15 @@ export default function Map() {
           {busStopData && busStopData.data.map((bus: any) => {
             return (
             <div key={bus.routeId._text}>
-            <h1>
+            <h1 onClick={async () => {
+              alert(`버스 번호: ${bus.routeName._text}`)
+              console.log(bus, `${busStopData.stationId}&routeId=${bus.routeId._text}&staOrder=${bus.staOrder._text}`)
+              const data = await fetch(`http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalItem?serviceKey=2ne%2FPTKvr%2BUL%2FsvEmupc%2B8Hs2tFqlSMFO5TxaKhD3Mq5%2FfwEqecNwnUZ8mDR1U0jvCSy96XEAyiPTYR111Sh1Q%3D%3D&stationId=${busStopData.stationId}&routeId=${bus.routeId._text}&staOrder=${bus.staOrder._text}`)
+              .then(async (res) => {
+                return JSON.parse(xml2json(await res.text(), {compact: true, spaces: 4}))
+              })
+              console.log(data)
+            }}>
             {bus.routeName._text}
             </h1>
             </div>
